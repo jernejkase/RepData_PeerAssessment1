@@ -7,19 +7,54 @@ output:
 
 
 ## Loading and preprocessing the data
+```{r}
+library(data.table)
+unzip("./activity.zip")
+activity <- fread("./activity.csv")
+```
 
 
 
 ## What is mean total number of steps taken per day?
+```{r results='hide'}
+stepsPerDay <- activity[!is.na(steps)][,.(steps=sum(steps)),by=date]
+totalSteps <- sum(stepsPerDay$steps)
+meanSteps <- mean(stepsPerDay$steps)
+medianSteps <- median(stepsPerDay$steps)
+```
 
+Total number of steps: `r totalSteps`
 
+Mean number of steps per day: `r meanSteps`
+
+Median number of steps per day: `r medianSteps`
 
 ## What is the average daily activity pattern?
 
 
 
 ## Imputing missing values
+```{r missingvals}
+missingValues <- activity[is.na(steps),.N]
+medianSteps <- activity[!is.na(steps),.(steps=median(steps)),by=interval]
+setkey(medianSteps,interval)
+setkey(activity,interval)
+imput <- medianSteps[activity]
+imput[!is.na(i.steps),steps:=i.steps]
+imput$i.steps <- NULL
 
+stepsPerDay <- imput[,.(steps=sum(steps)),by=date]
+totalSteps <- sum(stepsPerDay$steps)
+meanSteps <- mean(stepsPerDay$steps)
+medianSteps <- median(stepsPerDay$steps)
 
+hist(stepsPerDay$steps)
+```
+
+Number of missing values: `r missingValues`
+
+Mean number of steps per day: `r meanSteps`
+
+Median number of steps per day: `r medianSteps`
 
 ## Are there differences in activity patterns between weekdays and weekends?
