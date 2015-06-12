@@ -21,6 +21,7 @@ stepsPerDay <- activity[!is.na(steps)][,.(steps=sum(steps)),by=date]
 totalSteps <- sum(stepsPerDay$steps)
 meanSteps <- mean(stepsPerDay$steps)
 medianSteps <- median(stepsPerDay$steps)
+hist(stepsPerDay$steps)
 ```
 
 Total number of steps: `r totalSteps`
@@ -31,30 +32,66 @@ Median number of steps per day: `r medianSteps`
 
 ## What is the average daily activity pattern?
 
+Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r}
+library(lubridate)
+library(ggplot2)
+
+meanActivityByInterval <- activity[,.(meanSteps=mean(steps,na.rm=T)),by=.(interval)]
+
+ggplot(meanActivityByInterval, aes(x=interval,y=meanSteps)) + 
+	geom_line(stat="identity", position = 'identity')
+```
+
+On average, the maximum number of steps are made in interval: `r meanActivityByInterval[order(-meanSteps)][1]$interval`
 
 
 ## Imputing missing values
 ```{r missingvals}
-missingValues <- activity[is.na(steps),.N]
-medianSteps <- activity[!is.na(steps),.(steps=median(steps)),by=interval]
-setkey(medianSteps,interval)
+missingValuesCount <- activity[is.na(steps),.N]
+
+#strategy to imput data is to get median steps per interval (where steps != NA)
+# then replace NAs by that median for given interval
+medianStepsByInterval <- activity[!is.na(steps),.(steps=median(steps)),by=interval]
+setkey(medianStepsByInterval,interval)
 setkey(activity,interval)
-imput <- medianSteps[activity]
-imput[!is.na(i.steps),steps:=i.steps]
-imput$i.steps <- NULL
+activity <- medianStepsByInterval[activity]
+activity[!is.na(i.steps),steps:=i.steps]
+activity$i.steps <- NULL #this just removes i.steps column
 
-stepsPerDay <- imput[,.(steps=sum(steps)),by=date]
-totalSteps <- sum(stepsPerDay$steps)
-meanSteps <- mean(stepsPerDay$steps)
-medianSteps <- median(stepsPerDay$steps)
-
+stepsPerDay <- activity[,.(steps=sum(steps)),by=date]
+totalStepsImput <- sum(stepsPerDay$steps)
+meanStepsImput <- mean(stepsPerDay$steps)
+medianStepsImput <- median(stepsPerDay$steps)
 hist(stepsPerDay$steps)
 ```
 
-Number of missing values: `r missingValues`
+Number of missing values: `r missingValuesCount`
 
-Mean number of steps per day: `r meanSteps`
+Mean number of steps per day: `r meanStepsImput`
 
-Median number of steps per day: `r medianSteps`
+Median number of steps per day: `r medianStepsImput`
+
+###Difference before and after imputing data
+
+Difference between imputed mean and raw mean: `r meanStepsImput-meanSteps`
+
+Difference between imputed median and raw median: `r medianStepsImput-medianSteps`
+
+Difference between imputed total steps and raw total steps: `r totalStepsImput-totalSteps`
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+```{r}
+library(lubridate)
+library(ggplot2)
+activity[,weekday:=ifelse(wday(date)<3,"Weekend","Weekday")]
+#hist(log(activity[weekday %in% 3:7]$steps))
+
+ggplot(activity[,.(meanSteps=mean(steps)),by=.(interval,weekday)], aes(x=interval,y=meanSteps)) + 
+	geom_line(stat="identity", position = 'identity') + facet_grid(weekday ~ .)
+
+```
+
