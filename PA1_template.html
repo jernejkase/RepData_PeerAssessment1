@@ -265,6 +265,9 @@ meanActivityByInterval[,dateinterval:=ymd_hms(paste(today(),interval%/%100,inter
 
 <h2>Imputing missing values</h2>
 
+<p>strategy to imput data is to get median steps per interval where steps are not NA
+and then replace NAs by that median for the given interval</p>
+
 <pre><code class="r">missingValuesCount &lt;- activity[is.na(steps),.N]
 
 #strategy to imput data is to get median steps per interval (where steps != NA)

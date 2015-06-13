@@ -79,6 +79,10 @@ On average, the maximum number of steps are made in interval: 835
 
 ## Imputing missing values
 
+strategy to imput data is to get median steps per interval where steps are not NA
+and then replace NAs by that median for the given interval
+
+
 ```r
 missingValuesCount <- activity[is.na(steps),.N]
 
