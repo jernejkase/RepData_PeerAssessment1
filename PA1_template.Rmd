@@ -11,6 +11,9 @@ output:
 library(data.table)
 unzip("./activity.zip")
 activity <- fread("./activity.csv")
+
+#add datetime column combining date and interval
+#activity[,datetime:=ymd_hms(paste(date,interval%/%100,interval%%100,"00",sep="-"))]
 ```
 
 
@@ -34,14 +37,17 @@ Median number of steps per day: `r medianSteps`
 
 Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
+To get rid of the "saw effect", intervals are converted to POSIXit dates, using today's date for the date part (as the date itself does not play the role) and intervals for times.
+
 ```{r}
 library(lubridate)
 library(ggplot2)
 
 meanActivityByInterval <- activity[,.(meanSteps=mean(steps,na.rm=T)),by=.(interval)]
+meanActivityByInterval[,dateinterval:=ymd_hms(paste(today(),interval%/%100,interval%%100,"00",sep="-"))]
 
-ggplot(meanActivityByInterval, aes(x=interval,y=meanSteps)) + 
-	geom_line(stat="identity", position = 'identity')
+ggplot(meanActivityByInterval, aes(x=dateinterval,y=meanSteps)) + 
+	geom_line(stat="identity") 
 ```
 
 On average, the maximum number of steps are made in interval: `r meanActivityByInterval[order(-meanSteps)][1]$interval`
@@ -88,9 +94,10 @@ Panel plot containing a time series plot of the 5-minute interval (x-axis) and t
 library(lubridate)
 library(ggplot2)
 activity[,weekday:=ifelse(wday(date)<3,"Weekend","Weekday")]
-#hist(log(activity[weekday %in% 3:7]$steps))
+stepsPerIntervalWeekday <- activity[,.(meanSteps=mean(steps,na.rm=T)),by=.(interval,weekday)]
+stepsPerIntervalWeekday[,dateinterval:=ymd_hms(paste(today(),interval%/%100,interval%%100,"00",sep="-"))]
 
-ggplot(activity[,.(meanSteps=mean(steps)),by=.(interval,weekday)], aes(x=interval,y=meanSteps)) + 
+ggplot(stepsPerIntervalWeekday, aes(x=dateinterval,y=meanSteps)) + 
 	geom_line(stat="identity", position = 'identity') + facet_grid(weekday ~ .)
 
 ```
